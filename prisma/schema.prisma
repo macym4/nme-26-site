@@ -1,0 +1,130 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Profile {
+  id           String        @id @default(cuid())
+  name         String
+  slug         String        @unique
+  shortBio     String
+  fullBio      String
+  category     String
+  featured     Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  email        String?
+  instagram    String?
+  website      String?
+  mainImage    String?
+  images       Image[]
+  profileTags  ProfileTag[]
+  customFields CustomField[]
+}
+
+model Image {
+  id        String   @id @default(cuid())
+  url       String
+  alt       String?
+  sortOrder Int      @default(0)
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Tag {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  slug        String       @unique
+  profileTags ProfileTag[]
+  createdAt   DateTime     @default(now())
+}
+
+model ProfileTag {
+  profileId String
+  tagId     String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, tagId])
+}
+
+model CustomField {
+  id        String   @id @default(cuid())
+  label     String
+  value     String
+  sortOrder Int      @default(0)
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model SiteContent {
+  key       String   @id
+  title     String
+  body      String
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  phone        String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  role         String @default("user")
+  accessStatus String @default("pending")
+  approvedAt   DateTime?
+  approvedBy   String?
+  rejectedAt   DateTime?
+  rejectedBy   String?
+  suspendedAt  DateTime?
+  suspendedBy  String?
+  calendarItems CalendarItem[]
+  todoCompletions TodoCompletion[]
+}
+
+model AccessAudit {
+  id String @id @default(cuid())
+  userId String
+  action String
+  actorId String
+  createdAt DateTime @default(now())
+}
+
+model TodoCompletion {
+  id String @id @default(cuid())
+  userId String
+  taskKey String
+  completedAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, taskKey])
+}
+model DateAssignment {
+  id String @id @default(cuid())
+  memberOne String
+  memberTwo String
+  week Int
+  assignedAt DateTime @default(now())
+  @@unique([memberOne, memberTwo, week])
+}
+
+model CalendarItem {
+  id        String   @id @default(cuid())
+  title     String
+  location  String?
+  type      String
+  dueAt     DateTime
+  notes     String?
+  durationMinutes Int?
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, dueAt])
+}

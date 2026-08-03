@@ -1,0 +1,2 @@
+import { userLogoutAction } from "@/app/actions";
+export default function Pending() { return <main className="grid min-h-screen place-items-center p-6"><section className="rounded-2xl bg-white p-8 text-center shadow"><h1 className="text-2xl font-bold">Access pending</h1><p className="mt-3">Request sent to administrator for access.</p><form action={userLogoutAction}><button className="mt-6 font-bold underline">Log out</button></form></section></main>; }

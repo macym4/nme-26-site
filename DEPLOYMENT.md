@@ -32,3 +32,23 @@ generate the PostgreSQL client; regenerate the SQLite client afterward before
 resuming local SQLite development.
 
 The local database has not been changed or migrated by this deployment fix.
+
+## Shared account recovery password
+
+1. Run `npm run recovery-password` in an interactive terminal. Choose and confirm
+   a private password; input is hidden and only its bcrypt hash is printed.
+2. In Vercel, open Project Settings > Environment Variables. Set
+   `ACCOUNT_RECOVERY_PASSWORD_HASH` to that hash for Production, then redeploy.
+3. Use the normal sign-in form with an existing account's email and your recovery
+   password. Normal account passwords continue to work. Approval, suspension,
+   and role checks still apply. This is for member accounts, including the owner
+   account, not the separate legacy `/admin/login` username/password form.
+
+Recovery logins create `ACCOUNT_RECOVERY_LOGIN` audit records. The actor is marked
+as shared recovery, since the password alone cannot identify who used it.
+Removing or replacing the hash and redeploying revokes recovery sessions as well
+as the old recovery password. Normal sign-in sessions are unaffected.
+
+The feature is disabled when the variable is absent or empty. It requires no
+database schema update. Do not commit the password or hash, or configure the
+hash under a `NEXT_PUBLIC_` name.

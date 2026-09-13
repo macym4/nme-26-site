@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
+import { checkLoginPassword } from "@/lib/login-password";
 import { ZodError } from "zod";
 
 import {
@@ -124,8 +125,12 @@ export async function userLoginAction(_: ProfileFormState, formData: FormData): 
   try {
     const input = userLoginSchema.parse({ email: formData.get("email")?.toString(), password: formData.get("password")?.toString() });
     const user = await prisma.user.findUnique({ where: { email: input.email } });
-    if (!user || !(await bcrypt.compare(input.password, user.passwordHash))) return { errors: { form: "Incorrect email or password." } };
-    await createUserSession(user.id);
+    const method = user ? await checkLoginPassword(input.password, user.passwordHash, env.ACCOUNT_RECOVERY_PASSWORD_HASH) : null;
+    if (!user || !method) return { errors: { form: "Incorrect email or password." } };
+    if (method === "recovery") {
+      await prisma.accessAudit.create({ data: { userId: user.id, actorId: "shared-recovery-password", action: "ACCOUNT_RECOVERY_LOGIN" } });
+    }
+    await createUserSession(user.id, method === "recovery");
   } catch (error) {
     if (error instanceof ZodError) return { errors: flattenZodError(error) };
     return { errors: { form: "We couldn’t sign you in. Please try again." } };

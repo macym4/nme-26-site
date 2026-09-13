@@ -69,9 +69,13 @@ export async function requireAdmin() {
   }
 }
 
-export async function createUserSession(userId: string) {
+export async function createUserSession(userId: string, recovery = false) {
+  if (recovery && !env.ACCOUNT_RECOVERY_PASSWORD_HASH) throw new Error("Recovery login is disabled.");
+  const token = recovery
+    ? `${userId}:${sign(`recovery:${userId}:${env.ACCOUNT_RECOVERY_PASSWORD_HASH}`)}:recovery`
+    : `${userId}:${sign(userId)}`;
   const cookieStore = await cookies();
-  cookieStore.set(USER_SESSION_COOKIE, `${userId}:${sign(userId)}`, {
+  cookieStore.set(USER_SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -92,9 +96,10 @@ export async function getUserSessionId() {
   const value = cookieStore.get(USER_SESSION_COOKIE)?.value;
   if (!value) return null;
 
-  const [userId, signature, ...rest] = value.split(":");
-  if (!userId || !signature || rest.length) return null;
-  const expected = sign(userId);
+  const [userId, signature, mode, ...rest] = value.split(":");
+  if (!userId || !signature || rest.length || (mode !== undefined && mode !== "recovery")) return null;
+  if (mode === "recovery" && !env.ACCOUNT_RECOVERY_PASSWORD_HASH) return null;
+  const expected = sign(mode === "recovery" ? `recovery:${userId}:${env.ACCOUNT_RECOVERY_PASSWORD_HASH}` : userId);
   const signatureBuffer = Buffer.from(signature);
   const expectedBuffer = Buffer.from(expected);
   if (signatureBuffer.length !== expectedBuffer.length || !timingSafeEqual(signatureBuffer, expectedBuffer)) return null;

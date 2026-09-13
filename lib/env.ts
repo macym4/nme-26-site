@@ -6,6 +6,7 @@ const envSchema = z.object({
   ADMIN_PASSWORD_HASH: z.string().min(1),
   SESSION_SECRET: z.string().min(16),
   DATE_FEEDBACK_PASSWORD_HASH: z.string().optional(),
+  ACCOUNT_RECOVERY_PASSWORD_HASH: z.string().optional(),
 });
 
 export const env = envSchema.parse({
@@ -14,4 +15,5 @@ export const env = envSchema.parse({
   ADMIN_PASSWORD_HASH: process.env.ADMIN_PASSWORD_HASH,
   SESSION_SECRET: process.env.SESSION_SECRET,
   DATE_FEEDBACK_PASSWORD_HASH: process.env.DATE_FEEDBACK_PASSWORD_HASH,
+  ACCOUNT_RECOVERY_PASSWORD_HASH: process.env.ACCOUNT_RECOVERY_PASSWORD_HASH,
 });

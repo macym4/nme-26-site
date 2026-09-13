@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "seed": "tsx prisma/seed.ts",
     "import-calendar": "tsx prisma/import-calendar.ts",
-    "setup-admin": "tsx prisma/setup-admin.ts"
+    "setup-admin": "tsx prisma/setup-admin.ts",
+    "recovery-password": "node scripts/recovery-password.mjs"
   },
   "keywords": [
     "nextjs",

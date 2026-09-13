@@ -52,3 +52,32 @@ as the old recovery password. Normal sign-in sessions are unaffected.
 The feature is disabled when the variable is absent or empty. It requires no
 database schema update. Do not commit the password or hash, or configure the
 hash under a `NEXT_PUBLIC_` name.
+
+## Admin password resets
+
+Before deploying this feature, run `prisma/admin-password-reset-postgresql.sql`
+in the production database SQL editor. It adds `mustChangePassword` and
+`sessionVersion` with defaults; it does not change any existing password.
+Do not run the SQLite migration history on PostgreSQL.
+
+For local SQLite, apply the two statements in
+`prisma/migrations/20260914000000_add_admin_password_reset/migration.sql`
+once to your local database, then regenerate the SQLite client.
+
+In Administration > Profile Management, choose another member and use Reset
+password. Enter and confirm a temporary password, then share it privately.
+The member must replace it at next sign-in before accessing member pages or
+member actions. A reset ends that account's existing sessions, including
+recovery-password sessions. Completing the change ends temporary-password
+sessions. New recovery logins remain available if configured, but are also
+required to finish a pending password change. Roles and approval status are
+not changed. Self-reset is intentionally excluded from this admin workflow.
+
+Run the isolated reset integration tests with:
+
+```powershell
+npx prisma generate --schema prisma/schema.sqlite.prisma
+npx tsx --test lib/password-reset.test.ts lib/login-password.test.ts
+```
+
+Tests create a temporary database with test accounts and remove it afterward.

@@ -130,7 +130,7 @@ export async function userLoginAction(_: ProfileFormState, formData: FormData): 
     if (method === "recovery") {
       await prisma.accessAudit.create({ data: { userId: user.id, actorId: "shared-recovery-password", action: "ACCOUNT_RECOVERY_LOGIN" } });
     }
-    await createUserSession(user.id, method === "recovery");
+    await createUserSession(user.id, method === "recovery", user.sessionVersion);
   } catch (error) {
     if (error instanceof ZodError) return { errors: flattenZodError(error) };
     return { errors: { form: "We couldn’t sign you in. Please try again." } };

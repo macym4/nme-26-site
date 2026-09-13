@@ -77,6 +77,8 @@ model User {
   pledgeClass  String?
   email        String   @unique
   passwordHash String
+  mustChangePassword Boolean @default(false)
+  sessionVersion Int @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   role         String @default("user")

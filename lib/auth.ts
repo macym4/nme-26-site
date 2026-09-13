@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
+import { userSessionToken, validUserSession } from "@/lib/user-session";
 
 const SESSION_COOKIE = "directory-admin-session";
 const USER_SESSION_COOKIE = "aster-user-session";
@@ -69,11 +70,11 @@ export async function requireAdmin() {
   }
 }
 
-export async function createUserSession(userId: string, recovery = false) {
+export async function createUserSession(userId: string, recovery = false, expectedVersion?: number) {
   if (recovery && !env.ACCOUNT_RECOVERY_PASSWORD_HASH) throw new Error("Recovery login is disabled.");
-  const token = recovery
-    ? `${userId}:${sign(`recovery:${userId}:${env.ACCOUNT_RECOVERY_PASSWORD_HASH}`)}:recovery`
-    : `${userId}:${sign(userId)}`;
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { sessionVersion: true } });
+  if (expectedVersion !== undefined && user.sessionVersion !== expectedVersion) throw new Error("Password changed during sign-in. Please sign in again.");
+  const token = userSessionToken(userId, user.sessionVersion, env.SESSION_SECRET, recovery ? env.ACCOUNT_RECOVERY_PASSWORD_HASH : undefined);
   const cookieStore = await cookies();
   cookieStore.set(USER_SESSION_COOKIE, token, {
     httpOnly: true,
@@ -91,18 +92,16 @@ export async function clearUserSession() {
   cookieStore.delete(DATE_FEEDBACK_COOKIE);
 }
 
-export async function getUserSessionId() {
+export async function getUserSessionId(allowPasswordChange = false) {
   const cookieStore = await cookies();
   const value = cookieStore.get(USER_SESSION_COOKIE)?.value;
   if (!value) return null;
 
-  const [userId, signature, mode, ...rest] = value.split(":");
-  if (!userId || !signature || rest.length || (mode !== undefined && mode !== "recovery")) return null;
-  if (mode === "recovery" && !env.ACCOUNT_RECOVERY_PASSWORD_HASH) return null;
-  const expected = sign(mode === "recovery" ? `recovery:${userId}:${env.ACCOUNT_RECOVERY_PASSWORD_HASH}` : userId);
-  const signatureBuffer = Buffer.from(signature);
-  const expectedBuffer = Buffer.from(expected);
-  if (signatureBuffer.length !== expectedBuffer.length || !timingSafeEqual(signatureBuffer, expectedBuffer)) return null;
+  const userId = value.split(":")[0];
+  if (!userId) return null;
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { sessionVersion: true, mustChangePassword: true } });
+  if (!user || !validUserSession(value, user.sessionVersion, env.SESSION_SECRET, env.ACCOUNT_RECOVERY_PASSWORD_HASH)) return null;
+  if (user.mustChangePassword && !allowPasswordChange) redirect("/change-password");
   return userId;
 }
 

@@ -9,6 +9,8 @@ import { prisma } from "@/lib/prisma";
 
 const SESSION_COOKIE = "directory-admin-session";
 const USER_SESSION_COOKIE = "aster-user-session";
+const DATE_FEEDBACK_COOKIE = "date-feedback-access";
+const MEMBER_PREVIEW_COOKIE = "member-view-preview";
 
 function sign(value: string) {
   return createHmac("sha256", env.SESSION_SECRET).update(value).digest("hex");
@@ -81,6 +83,8 @@ export async function createUserSession(userId: string) {
 export async function clearUserSession() {
   const cookieStore = await cookies();
   cookieStore.delete(USER_SESSION_COOKIE);
+  cookieStore.delete(MEMBER_PREVIEW_COOKIE);
+  cookieStore.delete(DATE_FEEDBACK_COOKIE);
 }
 
 export async function getUserSessionId() {
@@ -97,6 +101,33 @@ export async function getUserSessionId() {
   return userId;
 }
 
-export async function getCurrentUser() { const id = await getUserSessionId(); return id ? prisma.user.findUnique({ where: { id } }) : null; }
+export async function getCurrentUser() {
+  const id = await getUserSessionId();
+  const user = id ? await prisma.user.findUnique({ where: { id }, include: { rosterMember: true } }) : null;
+  if (!user) return null;
+  const isActualAdmin = user.role === "admin" && user.accessStatus === "approved";
+  const isMemberPreview = isActualAdmin && (await cookies()).get(MEMBER_PREVIEW_COOKIE)?.value === user.id;
+  return { ...user, role: isMemberPreview ? "user" : user.role, isActualAdmin, isMemberPreview };
+}
+
+export async function setMemberPreview(enabled: boolean) {
+  const user = await getCurrentUser();
+  if (!user?.isActualAdmin) redirect("/welcome");
+  const store = await cookies();
+  if (enabled) {
+    store.set(MEMBER_PREVIEW_COOKIE, user.id, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 12,
+    });
+  } else {
+    store.delete(MEMBER_PREVIEW_COOKIE);
+  }
+}
 export async function requireApprovedUser() { const user = await getCurrentUser(); if (!user) redirect("/"); if (user.accessStatus === "pending") redirect("/access-pending"); if (user.accessStatus === "rejected") redirect("/access-denied"); if (user.accessStatus === "suspended") redirect("/access-suspended"); if (user.accessStatus !== "approved") redirect("/"); return user; }
 export async function requireUserAdmin() { const user = await requireApprovedUser(); if (user.role !== "admin") redirect("/welcome"); return user; }
+export async function hasDateFeedbackAccess() { const store = await cookies(); const value = store.get(DATE_FEEDBACK_COOKIE)?.value; const expected = `feedback:${sign("date-feedback")}`; return Boolean(value && value.length === expected.length && timingSafeEqual(Buffer.from(value), Buffer.from(expected))); }
+export async function createDateFeedbackAccess() { const store = await cookies(); store.set(DATE_FEEDBACK_COOKIE, `feedback:${sign("date-feedback")}`, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 60 * 60 * 4 }); }
+export async function clearDateFeedbackAccess() { const store = await cookies(); store.delete(DATE_FEEDBACK_COOKIE); }

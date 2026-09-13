@@ -1,5 +1,14 @@
-"use client";
-import { useActionState } from "react";
-import { createDateAssignmentsAction } from "@/app/actions";
-import { NmePage } from "@/components/nme/page";
-export default function DateAssignment() { const [state, action, pending] = useActionState(createDateAssignmentsAction, {}); return <NmePage title="Date Assignment" subtitle="Publish date pairings and copy personalized notification drafts."><form action={action} className="rounded-2xl bg-white p-6"><label className="font-bold">Week <input className="ml-2 w-16 rounded border p-2" name="week" type="number" defaultValue="6" /></label><textarea className="mt-4 min-h-48 w-full rounded-xl border p-3" name="pairings" placeholder="PC 29 Name, PC 28 Name&#10;PC 29 Name, PC 28 Name" /><p className="mt-3 text-sm">After publishing, each member receives a one-week feedback deadline. Draft: “Hi [Name]! You&apos;ve been assigned a sister date with [Partner] for Week [#]. Please connect and complete feedback within one week: https://form.typeform.com/to/ZxjAIOlF”</p>{state.errors?.form && <p className="text-red-700">{state.errors.form}</p>}{state.success && <p className="text-green-700">{state.success}</p>}<button disabled={pending} className="mt-4 rounded-lg bg-[#7d1d2b] px-4 py-2 text-white">Publish assignments</button></form></NmePage>; }
+import { DraftTextMessages } from "@/components/nme/draft-text-messages";
+import { CopyCard, NmePage } from "@/components/nme/page";
+import { DateAssignmentImporter } from "@/components/pairings/date-assignment-importer";
+import { requireUserAdmin } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+
+export default async function DateAssignment() {
+  await requireUserAdmin();
+  const [members, assignments] = await Promise.all([
+    prisma.user.findMany({ where: { accessStatus: "approved", email: { not: "calendar@aphi.local" } }, orderBy: { name: "asc" }, select: { id: true, name: true, pledgeClass: true } }),
+    prisma.dateAssignment.findMany({ orderBy: { week: "asc" } }),
+  ]);
+  return <NmePage title="Date Assignment" subtitle="Paste CSV pairings, review them, then drag and drop to confirm each batch."><DateAssignmentImporter /><div className="mt-8"><CopyCard title="Draft Text Messages"><DraftTextMessages members={members} assignments={assignments} /></CopyCard></div></NmePage>;
+}

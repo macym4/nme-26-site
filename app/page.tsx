@@ -1,28 +1,5 @@
 import { AuthCard } from "@/components/auth/auth-card";
 
 export default function HomePage() {
-  return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-5 py-10 sm:px-8">
-      <div className="pointer-events-none absolute -left-24 top-[-4rem] h-72 w-72 rounded-full bg-[#dcd5ff] blur-3xl" />
-      <div className="pointer-events-none absolute -right-20 bottom-[-3rem] h-80 w-80 rounded-full bg-[#c8f2e1] blur-3xl" />
-      <section className="relative grid w-full max-w-5xl overflow-hidden rounded-[2rem] border border-white/80 bg-white/80 shadow-[0_30px_90px_rgba(54,42,108,0.14)] backdrop-blur-xl lg:grid-cols-[.9fr_1.1fr]">
-        <div className="hidden flex-col justify-between bg-[#312e62] p-12 text-white lg:flex">
-          <div>
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-xl font-bold text-[#312e62]">a</div>
-            <p className="mt-12 text-sm font-semibold uppercase tracking-[0.22em] text-[#c8c3ff]">Welcome to Aster</p>
-            <h1 className="mt-4 max-w-sm text-5xl font-semibold leading-[1.08] tracking-tight">A little space to call your own.</h1>
-            <p className="mt-6 max-w-sm text-base leading-7 text-white/70">Create your account and keep the people, things, and moments that matter close.</p>
-          </div>
-          <p className="text-sm text-white/55">Simple, private, and made for you.</p>
-        </div>
-        <div className="p-6 sm:p-10 lg:p-12">
-          <div className="mb-8 flex items-center gap-3 lg:hidden">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#312e62] text-lg font-bold text-white">a</div>
-            <span className="text-lg font-semibold tracking-tight text-[#24213f]">Aster</span>
-          </div>
-          <AuthCard />
-        </div>
-      </section>
-    </main>
-  );
+  return <main className="min-h-screen bg-[#e5e2e3] px-4 py-4 sm:px-8 sm:py-8"><section className="mx-auto grid min-h-[calc(100vh-2rem)] max-w-7xl bg-white shadow-[0_24px_70px_rgba(47,25,34,.16)] lg:grid-cols-[.8fr_1fr] sm:min-h-[calc(100vh-4rem)]"><div className="relative hidden self-stretch overflow-hidden bg-[#6f1935] p-12 text-white lg:flex lg:flex-col"><div className="absolute -right-28 -top-24 h-80 w-80 rounded-full border border-white/15" /><div className="absolute -bottom-24 -left-20 h-72 w-72 rounded-full border-[34px] border-white/10" /><div className="relative"><p className="font-serif text-5xl font-semibold leading-none">ΑΦ</p><p className="mt-10 text-xs font-bold uppercase tracking-[.22em] text-white/70">MIT Alpha Phi · Zeta Phi Chapter</p><p className="mt-5 max-w-md font-serif text-5xl font-semibold leading-[.9]">A chapter home for every new beginning.</p><p className="mt-8 max-w-sm text-sm leading-6 text-white/70">Resources, programming, schedules, and more for your APhi NME journey!</p></div></div><div className="flex items-center bg-[#faf9f8] px-6 py-12 sm:px-12 lg:px-16"><div className="w-full"><AuthCard /></div></div></section></main>;
 }

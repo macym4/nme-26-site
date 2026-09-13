@@ -1,9 +1,19 @@
 .next
 node_modules
 coverage
-.env
-.env.local
+.env*
+!.env.example
+.vercel
 prisma/dev.db
 prisma/dev.db-journal
 public/uploads/runtime
 *.log
+/20241022_100135_6D2F3C.JPG
+/IMG_3511.JPG
+/IMG_7640.JPG
+/IMG_9406.JPG
+/IMG_9947.JPG
+/Screenshot 2026-07-31 203510.png
+/Screenshot 2026-07-31 204910.png
+/Screenshot 2026-07-31 204918.png
+/Screenshot 2026-08-12 195625.png

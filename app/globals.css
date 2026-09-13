@@ -1,15 +1,15 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700&family=Manrope:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
 :root {
-  --background: #f5f4fb;
-  --foreground: #24213f;
-  --ink: #15322a;
-  --soft-ink: #5f736c;
-  --line: rgba(21, 50, 42, 0.12);
-  --muted: #efe6d6;
-  --accent: #15322a;
-  --accent-foreground: #f8f5ef;
+  --background: #f4f1ee;
+  --foreground: #292629;
+  --ink: #6f1935;
+  --soft-ink: #665e63;
+  --line: rgba(111, 25, 53, 0.16);
+  --muted: #e2e0e0;
+  --accent: #6f1935;
+  --accent-foreground: #ffffff;
 }
 
 html {
@@ -18,8 +18,16 @@ html {
 
 body {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f7f6ff 0%, #eefaf5 100%);
+  background: #f4f1ee;
   color: var(--foreground);
+  font-family: "Manrope", Arial, sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }
 
 body::selection {
@@ -27,9 +35,64 @@ body::selection {
 }
 
 .font-serif {
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: "Cormorant Garamond", Georgia, serif;
 }
 
 .font-dm-sans {
-  font-family: "DM Sans", Arial, sans-serif;
+  font-family: "Manrope", Arial, sans-serif;
+}
+
+.portal-grain {
+  background-image: radial-gradient(rgba(125, 29, 43, 0.12) 0.7px, transparent 0.7px);
+  background-position: 0 0;
+  background-size: 12px 12px;
+}
+
+.portal-canvas {
+  position: relative;
+  isolation: isolate;
+  background: #f4f1ee;
+}
+
+.portal-canvas::before,
+.portal-canvas::after {
+  display: none;
+}
+
+.portal-canvas::before { left: -16rem; transform: rotate(-12deg); }
+.portal-canvas::after { right: -16rem; transform: scaleX(-1) rotate(-12deg); }
+.portal-canvas > * { position: relative; }
+
+.portal-canvas > header {
+  z-index: 9999 !important;
+  isolation: isolate;
+  overflow: visible !important;
+}
+
+.editorial-sheet {
+  overflow: hidden;
+  background: #fff;
+}
+
+.editorial-chrome {
+  display: none;
+}
+
+.editorial-chrome span {
+  width: 0.45rem;
+  height: 0.45rem;
+  border: 1px solid #c6b4a6;
+  border-radius: 999px;
+}
+
+.glass-card {
+  background: #fff;
+  border-color: #dedbdd;
+  box-shadow: none;
+}
+
+.glass-hero {
+  background: #6f1935;
+  border: 0;
+  box-shadow: none;
 }

@@ -1,0 +1,7 @@
+import { setMemberTodoAction, updateTodoTaskAction } from "@/app/actions";
+
+type Task = { key: string; label: string; href: string | null };
+
+export function TodoManager({ memberId, completed, tasks }: { memberId: string; completed: Set<string>; tasks: Task[] }) {
+  return <div className="space-y-4">{tasks.map((task) => <div key={task.key} className="rounded-xl bg-[#fcf5f6] p-4"><div className="flex items-center justify-between gap-3"><span className={completed.has(task.key) ? "text-[#9b858a] line-through" : "font-semibold text-[#4a3036]"}>{task.label}</span><form action={setMemberTodoAction.bind(null, memberId, task.key, !completed.has(task.key))}><button className={`rounded px-2 py-1 text-xs font-bold ${completed.has(task.key) ? "bg-[#e2f3ea] text-[#367354]" : "bg-[#f4e5e7] text-[#7d1d2b]"}`}>{completed.has(task.key) ? "Complete" : "Mark complete"}</button></form></div><form action={updateTodoTaskAction.bind(null, task.key)} className="mt-3 grid gap-2 border-t border-[#eadfe1] pt-3 sm:grid-cols-[1fr_1fr_auto]"><input name="label" defaultValue={task.label} aria-label="Task label" className="rounded-lg border border-[#dfd3d5] bg-white px-3 py-2 text-sm" /><input name="href" defaultValue={task.href ?? ""} placeholder="Optional link (https://...)" aria-label="Task link" className="rounded-lg border border-[#dfd3d5] bg-white px-3 py-2 text-sm" /><button className="rounded-lg border border-[#7d1d2b] px-3 py-2 text-sm font-bold text-[#7d1d2b]">Save edits</button></form></div>)}</div>;
+}

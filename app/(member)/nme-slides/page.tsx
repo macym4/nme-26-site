@@ -1,2 +1,7 @@
 import { NmePage, CopyCard } from "@/components/nme/page";
-export default function NmeSlides() { return <NmePage title="NME Slides" subtitle="Chapter presentations and helpful information."><CopyCard title="Presentation"><div className="flex min-h-96 items-center justify-center rounded-xl border-2 border-dashed border-[#e2d4d7] bg-[#fcf8f8] p-8 text-center"><div><p className="font-semibold text-[#5e464c]">Google Slides will appear here</p><p className="mt-2 text-sm">Add the shareable Google Slides embed link to display your presentation for all members.</p></div></div></CopyCard></NmePage>; }
+
+const presentationId = "1FiOQbVtYSLTq1TMa_18YYHpurZ3BJCKMtJ0XtitejNg";
+
+export default function NmeSlides() {
+  return <NmePage title="NME Slides" subtitle="New Member presentations and other helpful information"><CopyCard title="Presentation"><div className="overflow-hidden rounded-xl border border-[#e2d4d7] bg-[#fcf8f8]"><iframe title="Alpha Phi NME slides" src={`https://docs.google.com/presentation/d/${presentationId}/embed?start=false&loop=false&delayms=3000`} className="aspect-[16/9] w-full" allowFullScreen /></div><a href={`https://docs.google.com/presentation/d/${presentationId}/view`} target="_blank" rel="noreferrer" className="mt-4 inline-block font-semibold text-[#7d1d2b] underline">Open the slides in Google Slides</a></CopyCard></NmePage>;
+}

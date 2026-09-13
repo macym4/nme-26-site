@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Aster | Welcome",
-  description: "Create an account or sign in to Aster.",
+  title: "Alpha Phi | Zeta Phi",
+  description: "Alpha Phi Zeta Phi chapter resources and new member education.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint .",
     "seed": "tsx prisma/seed.ts",
+    "import-calendar": "tsx prisma/import-calendar.ts",
     "setup-admin": "tsx prisma/setup-admin.ts"
   },
   "keywords": [

@@ -30,3 +30,4 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     </div>
   );
 }
+export const dynamic = "force-dynamic";

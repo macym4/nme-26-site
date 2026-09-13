@@ -7,6 +7,8 @@ import { requireApprovedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getTodoTasks } from "@/lib/todos";
 
+export const dynamic = "force-dynamic";
+
 const resources: [string, string][] = [["NME Slides", "/nme-slides"], ["Health & Education", "/health-education"], ["Academic & Career", "/academic-career"], ["Chapter Information", "/chapter-information"]];
 const management: [string, string][] = [["Profile Management", "/profile-management"], ["Date Assignment", "/date-assignment"], ["Date Feedback Results", "/date-feedback-results"], ["Possible Pairings", "/possible-pairings"]];
 

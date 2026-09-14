@@ -15,7 +15,7 @@ function responseScore(response: FormFeedbackResponse) {
   return (yesMaybe(response.enjoy) + yesMaybe(response.anotherDate) + response.comfort / 5 + response.conversation / 5 - (response.concerns ? 1 : 0)) / 6;
 }
 
-export function buildPairingData(roster: RosterMember[], savedAssignments: Assignment[], classSheets: string[][][], responses: FormFeedbackResponse[]) {
+export function buildPairingData(roster: RosterMember[], savedAssignments: Assignment[], classSheets: string[][][], responses: FormFeedbackResponse[], masterAssignments = false) {
   const aliases = new Map<string, string>();
   for (const member of roster) {
     for (const name of [member.canonicalName, member.dateSheetName, ...JSON.parse(member.aliases) as string[]]) {
@@ -46,7 +46,7 @@ export function buildPairingData(roster: RosterMember[], savedAssignments: Assig
       const addRules = (value: string, target: Set<string>) => value.split(/[;,\n]+/).map(resolve).filter(Boolean).forEach((partner) => target.add(pairingKey(member, partner)));
       addRules(row[hardColumn] || "", hardNos);
       addRules(row[requestColumn] || "", mandatory);
-      for (const week of weeks) {
+      for (const week of masterAssignments ? [] : weeks) {
         const start = normalized.findIndex((header) => header === `week ${week} dates` || header === `week ${week} pairings`);
         if (start < 0) continue;
         const next = normalized.findIndex((header, index) => index > start && /^week \d+ /.test(header));
@@ -60,7 +60,8 @@ export function buildPairingData(roster: RosterMember[], savedAssignments: Assig
     }
   });
   const allAssignments = [...assignments.values()];
-  const rowsFor = (names: string[]) => Object.fromEntries(weeks.map((week) => [week, names.map((primary) => ({
+  const visibleWeeks = [...new Set([...weeks, ...allAssignments.map((assignment) => assignment.week)])].sort((a, b) => a - b);
+  const rowsFor = (names: string[]) => Object.fromEntries(visibleWeeks.map((week) => [week, names.map((primary) => ({
     primary,
     partners: allAssignments.filter((assignment) => assignment.week === week && (assignment.memberOne === primary || assignment.memberTwo === primary))
       .map((assignment) => assignment.memberOne === primary ? assignment.memberTwo : assignment.memberOne),
@@ -93,18 +94,27 @@ export function buildPairingData(roster: RosterMember[], savedAssignments: Assig
       priorFeedback.length ? "Feedback comes from the current Form Responses sheet; similarity is neutral because no current matrix exists." : "No PC 26 feedback has been submitted for this member yet; suggestions are balanced by assignment load.",
     ] };
   });
-  return { recommendations, existing, feedback };
+  return { recommendations, existing, feedback, assignments: allAssignments };
 }
 
 const getCurrentPairingData = cache(async () => {
-  const [roster, assignments, pc25, pc26, responses] = await Promise.all([
+  const [roster, assignments, pc25, pc26, responses, master] = await Promise.all([
     prisma.rosterMember.findMany({ where: { pledgeClass: { in: ["PC 25", "PC 26"] } }, orderBy: { canonicalName: "asc" } }),
     prisma.dateAssignment.findMany({ orderBy: [{ week: "asc" }, { assignedAt: "asc" }] }),
     getFeedbackSheetRows("PC 25 Summary Sheet"), getFeedbackSheetRows("PC 26 Summary Sheet"), getFormFeedbackResponses(),
+    prisma.siteContent.findUnique({ where: { key: "date-assignment-master" } }),
   ]);
-  return buildPairingData(roster, assignments, [pc25, pc26], responses);
+  return buildPairingData(roster, assignments, [pc25, pc26], responses, Boolean(master));
 });
 
-export async function getExistingWeekPairings() { return (await getCurrentPairingData()).existing; }
+export async function getExistingWeekPairings() {
+  const master = await prisma.siteContent.findUnique({ where: { key: "date-assignment-master" } });
+  if (!master) return (await getCurrentPairingData()).existing;
+  const [roster, assignments] = await Promise.all([
+    prisma.rosterMember.findMany(),
+    prisma.dateAssignment.findMany({ orderBy: { week: "asc" } }),
+  ]);
+  return buildPairingData(roster, assignments, [[["PC 25"]], [["PC 26"]]], [], true).existing;
+}
 export async function getPairingFeedback() { return (await getCurrentPairingData()).feedback; }
 export async function getWeekSixRecommendations() { return (await getCurrentPairingData()).recommendations; }

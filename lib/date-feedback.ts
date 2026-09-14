@@ -23,13 +23,15 @@ export function parseFormFeedbackResponses([headers = [], ...rows]: string[][]):
   if (!names.length || !normalizedHeaders.some((header) => header.includes("who did you go on a sister date with"))) {
     throw new Error("The Form Responses sheet is missing its name or date-partner columns.");
   }
-  return rows.flatMap((row) => names.flatMap((start, section) => {
-    const end = names[section + 1] ?? headers.length;
+  const starts = names.map((index) => normalizedHeaders[index - 1]?.includes("who did you go on a sister date with") ? index - 1 : index);
+  return rows.flatMap((row) => names.flatMap((nameColumn, section) => {
+    const start = starts[section];
+    const end = starts[section + 1] ?? headers.length;
     const get = (term: string) => {
       const column = normalizedHeaders.findIndex((header, index) => index >= start && index < end && header.includes(term));
       return column < 0 ? "" : row[column]?.trim() || "";
     };
-    const member = row[start]?.trim(), partner = get("who did you go on a sister date with");
+    const member = row[nameColumn]?.trim(), partner = get("who did you go on a sister date with");
     return member && partner ? [{
       member, partner,
       comfort: Number(get("comfortable did you feel")) || 0,

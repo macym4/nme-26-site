@@ -37,7 +37,7 @@ export default async function DateAssignment() {
   }
   const responses = feedback.responses.map((response) => feedbackKey(resolve(response.member), resolve(response.partner)));
   return <NmePage title="Date Assignment" subtitle="Manage every sister date in one place, with response status for both people.">
-    <AssignmentMaster key={master.version} assignments={master.assignments} members={[...members.values()].sort((a, b) => a.name.localeCompare(b.name))} responses={responses} feedbackAvailable={feedback.available} checkedAt={new Date().toISOString()} version={master.version} available={master.available} initialized={master.initialized} />
+    <AssignmentMaster aliases={Object.fromEntries([...aliases, ...[...members.keys()].map((name) => [normalizeMemberName(name), name])])} key={master.version} assignments={master.assignments} members={[...members.values()].sort((a, b) => a.name.localeCompare(b.name))} responses={responses} feedbackAvailable={feedback.available} checkedAt={new Date().toISOString()} version={master.version} available={master.available} initialized={master.initialized} />
     <div className="mt-8"><CopyCard title="Draft Text Messages"><DraftTextMessages members={accounts.map((account) => ({ ...account, name: resolve(account.name) }))} assignments={master.assignments} /></CopyCard></div>
   </NmePage>;
 }

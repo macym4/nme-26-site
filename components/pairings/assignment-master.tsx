@@ -4,16 +4,19 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { saveAssignmentMaster } from "@/app/assignment-master-actions";
 import { isClassMember, specialPartnerDates, memberWeekDates, type AssignmentMember, type MasterAssignment } from "@/lib/assignment-master";
+import { importWeeklyAssignments } from "@/lib/weekly-assignment-import";
 import { feedbackKey } from "@/lib/pairings";
 
 const button = "rounded-lg border border-[#dfd3d5] px-3 py-2 text-sm font-semibold disabled:opacity-50";
 
-export function AssignmentMaster({ assignments, members: suppliedMembers, responses, feedbackAvailable, checkedAt, version, available, initialized }: {
+export function AssignmentMaster({ assignments, members: suppliedMembers, responses, feedbackAvailable, checkedAt, version, available, initialized, aliases }: {
   assignments: MasterAssignment[]; members: AssignmentMember[]; responses: string[]; feedbackAvailable: boolean;
-  checkedAt: string; version: string; available: boolean; initialized: boolean;
+  aliases: Record<string, string>; checkedAt: string; version: string; available: boolean; initialized: boolean;
 }) {
   const router = useRouter();
   const [dates, setDates] = useState(assignments);
+  const [pasteSource, setPasteSource] = useState("");
+  const [pasteWeek, setPasteWeek] = useState("1");
   const [rowClass, setRowClass] = useState("PC 25");
   const [query, setQuery] = useState("");
   const [extraWeeks, setExtraWeeks] = useState<number[]>([]);
@@ -45,12 +48,14 @@ export function AssignmentMaster({ assignments, members: suppliedMembers, respon
     if (!isClassMember(members.find((member) => member.name === name)) && !responseKeys.has(feedbackKey(name, partner))) return "Special partner · no account required";
     return !feedbackAvailable ? "Status unavailable" : responseKeys.has(feedbackKey(name, partner)) ? "Response received" : "No response yet";
   }
-  function save() {
+  function save(next = dates) {
     startTransition(async () => {
       try {
-        const result = await saveAssignmentMaster(dates, version);
+        const result = await saveAssignmentMaster(next, version);
         if (result.error) { setMessage(result.error); return; }
         setDirty(false);
+        setDates(next);
+        setPasteSource("");
         setMessage("Assignments saved.");
         router.refresh();
       } catch { setMessage("Could not reach the server. Your edits are still here; try saving again."); }
@@ -60,10 +65,21 @@ export function AssignmentMaster({ assignments, members: suppliedMembers, respon
   return <section className="space-y-4">
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div><h2 className="font-serif text-2xl font-semibold text-[#4a3036]">Master assignment sheet</h2><p className="mt-1 text-sm text-[#806d72]">{dates.length} dates · Changes apply to both class views when saved.</p></div>
-      <div className="flex flex-wrap gap-2"><button type="button" className={button} disabled={pending || !dirty} onClick={() => { setDates(assignments); setDirty(false); setMessage(""); }}>Discard edits</button><button type="button" className={`${button} bg-[#7d1d2b] text-white`} disabled={pending || !available || (!dirty && initialized)} onClick={save}>{pending ? "Saving…" : "Save master sheet"}</button></div>
+      <div className="flex flex-wrap gap-2"><button type="button" className={button} disabled={pending || !dirty} onClick={() => { setDates(assignments); setDirty(false); setMessage(""); }}>Discard edits</button><button type="button" className={`${button} bg-[#7d1d2b] text-white`} disabled={pending || !available || (!dirty && initialized)} onClick={() => save()}>{pending ? "Saving…" : "Save master sheet"}</button></div>
     </div>
     {!initialized && available && <p className="rounded-lg bg-[#fcf5f6] p-3 text-sm text-[#604a50]">Existing assignments from both Google summary tabs and the site are included below. Your first save makes this page the master for assignments. Form responses will continue updating from Google Sheets.</p>}
     {!available && <p role="alert" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">The existing Google assignments could not be loaded. Only saved site dates are shown. Editing is disabled until the full sheet can be loaded.</p>}
+    <fieldset disabled={pending || !available} className="space-y-3 rounded-xl border border-[#dfd3d5] bg-white p-4">
+      <legend className="px-2 font-semibold text-[#604a50]">Paste this week&apos;s dates</legend>
+      <label className="block text-sm font-semibold">Week <input aria-label="Week for pasted dates" type="number" min={1} max={52} value={pasteWeek} onChange={(event) => setPasteWeek(event.target.value)} className="ml-2 w-20 rounded-lg border border-[#dfd3d5] p-2" /></label>
+      <label className="block text-sm font-semibold">Weekly pairings<textarea value={pasteSource} onChange={(event) => setPasteSource(event.target.value)} placeholder={"Member\tPartner 1\tPartner 2"} className="mt-2 min-h-36 w-full rounded-lg border border-[#dfd3d5] p-3 font-mono text-sm" /></label>
+      <p className="text-sm text-[#806d72]">Copy the member and partner columns for one week. Each row can include multiple partners. Tabs, commas, semicolons, and Markdown tables are supported. Dates are added to the selected week; existing dates are kept and duplicates are skipped.</p>
+      <button type="button" disabled={!pasteSource.trim() || pending || !available} className={`${button} bg-[#7d1d2b] text-white`} onClick={() => {
+        try { save(importWeeklyAssignments(pasteSource, Number(pasteWeek), dates, aliases)); }
+        catch (error) { setMessage(error instanceof Error ? error.message : "Could not read those dates."); }
+      }}>{pending ? "Assigning..." : "Assign dates"}</button>
+      <p className="text-xs text-[#806d72]">Assign dates saves directly into the table, including any edits below. Each person&apos;s feedback status fills in automatically from submitted forms.</p>
+    </fieldset>
     <div className="flex flex-wrap items-end gap-3">
       <div className="flex gap-2" aria-label="Class shown as rows">{["PC 25", "PC 26"].map((value) => <button key={value} type="button" aria-pressed={rowClass === value} onClick={() => setRowClass(value)} className={`${button} ${rowClass === value ? "bg-[#7d1d2b] text-white" : "bg-white"}`}>{value} as rows</button>)}</div>
       <label className="text-sm font-semibold">Find a member<input value={query} onChange={(event) => setQuery(event.target.value)} className="ml-2 rounded-lg border border-[#dfd3d5] px-3 py-2" placeholder="Search name" /></label>

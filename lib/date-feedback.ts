@@ -46,7 +46,24 @@ export function parseFormFeedbackResponses([headers = [], ...rows]: string[][]):
   }));
 }
 
-export const getFormFeedbackResponses = cache(async () => parseFormFeedbackResponses(await getFeedbackSheetRows("Raw Form Responses")));
+export function parseParsedFeedbackResponses([headers = [], ...rows]: string[][]): FormFeedbackResponse[] {
+  const columns = headers.map(normalizeMemberName);
+  const memberColumn = columns.indexOf("respondee");
+  const partnerColumn = columns.indexOf("date name");
+  if (memberColumn < 0 || partnerColumn < 0) {
+    throw new Error("The Parsed Responses sheet is missing its Respondee or Date Name columns.");
+  }
+  return rows.flatMap((row) => {
+    const get = (header: string) => row[columns.indexOf(header)]?.trim() ?? "";
+    const member = row[memberColumn]?.trim(), partner = row[partnerColumn]?.trim();
+    if (!member || !partner || member.startsWith("#") || partner.startsWith("#")) return [];
+    return [{ member, partner, comfort: Number(get("comfort")) || 0, conversation: Number(get("flow")) || 0,
+      enjoy: get("enjoy"), anotherDate: get("second date"), concerns: get("red flags"),
+      bondedOver: get("what talk about"), futureDates: get("future dates"), thoughts: get("other thoughts") }];
+  });
+}
+
+export const getFormFeedbackResponses = cache(async () => parseParsedFeedbackResponses(await getFeedbackSheetRows("Parsed Responses")));
 
 export async function syncDateFeedbackCompletions() {
   const [responses, assignments, users] = await Promise.all([
@@ -54,10 +71,18 @@ export async function syncDateFeedbackCompletions() {
     prisma.dateAssignment.findMany(),
     prisma.user.findMany({ include: { rosterMember: true } }),
   ]);
-  const assignmentByPair = new Map(assignments.map((assignment) => [pairingKey(assignment.memberOne, assignment.memberTwo), assignment]));
-  const userByName = new Map(users.flatMap((user) => [[normalizeMemberName(user.name), user], user.rosterMember ? [normalizeMemberName(user.rosterMember.dateSheetName), user] : []] as const).filter((entry): entry is [string, typeof users[number]] => Boolean(entry[0])));
+  const userByName = new Map(users.flatMap((user) => {
+    const roster = user.rosterMember;
+    const names = [user.name, ...(roster ? [roster.canonicalName, roster.dateSheetName, ...JSON.parse(roster.aliases) as string[]] : [])];
+    return names.map((name) => [normalizeMemberName(name), user] as const);
+  }));
+  const resolve = (name: string) => {
+    const user = userByName.get(normalizeMemberName(name));
+    return user?.rosterMember?.dateSheetName ?? user?.name ?? name;
+  };
+  const assignmentByPair = new Map(assignments.map((assignment) => [pairingKey(resolve(assignment.memberOne), resolve(assignment.memberTwo)), assignment]));
   const upserts = responses.flatMap((response) => {
-    const assignment = assignmentByPair.get(pairingKey(response.member, response.partner));
+    const assignment = assignmentByPair.get(pairingKey(resolve(response.member), resolve(response.partner)));
     const user = userByName.get(normalizeMemberName(response.member));
     return assignment && user ? [prisma.dateFeedbackCompletion.upsert({ where: { assignmentId_userId: { assignmentId: assignment.id, userId: user.id } }, update: { completedAt: new Date() }, create: { assignmentId: assignment.id, userId: user.id } })] : [];
   });

@@ -22,7 +22,7 @@ export function csvRows(text: string) {
 }
 
 export const getFeedbackSheetRows = cache(async (tab: string) => {
-  const response = await fetch(`https://docs.google.com/spreadsheets/d/${DATE_FEEDBACK_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tab)}`, { cache: "no-store", signal: AbortSignal.timeout(8000) });
+  const response = await fetch(`https://docs.google.com/spreadsheets/d/${DATE_FEEDBACK_SHEET_ID}/gviz/tq?tqx=out:csv&headers=1&sheet=${encodeURIComponent(tab)}`, { cache: "no-store", signal: AbortSignal.timeout(8000) });
   if (!response.ok) throw new Error(`Could not load ${tab} from the sister-date feedback sheet.`);
   const text = await response.text();
   if (/^\s*</.test(text)) throw new Error(`The sister-date sheet returned a login page instead of ${tab}.`);

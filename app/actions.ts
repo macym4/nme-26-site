@@ -21,7 +21,7 @@ import { createProfileRecord, updateProfileRecord } from "@/lib/profile-service"
 import { prisma } from "@/lib/prisma";
 import { aboutSchema, calendarItemSchema, loginSchema, registrationSchema, userLoginSchema } from "@/lib/validation";
 import { getCurrentUser, getUserSessionId, setMemberPreview } from "@/lib/auth";
-import { saveUploadedFile } from "@/lib/uploads";
+import { profilePhotoDataUrl } from "@/lib/profile-photo";
 import { findVerifiedRosterMatch } from "@/lib/roster";
 import { createDateFeedbackAccess } from "@/lib/auth";
 import type { ProfileFormState } from "@/types";
@@ -109,17 +109,14 @@ export async function registerUserAction(_: ProfileFormState, formData: FormData
       name: formData.get("name")?.toString(), phone: formData.get("phone")?.toString(),
       email: formData.get("email")?.toString(), password: formData.get("password")?.toString(),
     });
-    const profileImageFile = formData.get("profileImage");
-    if (profileImageFile instanceof File && profileImageFile.size > 0 && !profileImageFile.type.startsWith("image/")) return { errors: { form: "Profile photo must be an image file." } };
-    if (profileImageFile instanceof File && profileImageFile.size > 5 * 1024 * 1024) return { errors: { form: "Profile photo must be 5 MB or smaller." } };
+    let profileImage: string | null;
+    try { profileImage = await profilePhotoDataUrl(formData.get("profileImage")); }
+    catch (error) { return { errors: { form: error instanceof Error ? error.message : "Unable to prepare your photo." } }; }
     const existing = await prisma.user.findUnique({ where: { email: input.email }, select: { id: true } });
     if (existing) return { errors: { form: "An account with that email already exists. Please sign in." } };
     const rosterMember = await findVerifiedRosterMatch(input.name);
     autoApproved = Boolean(rosterMember);
-    const user = await prisma.user.create({ data: { name: input.name, phone: input.phone, email: input.email, passwordHash: await bcrypt.hash(input.password, 12), role: "user", accessStatus: rosterMember ? "approved" : "pending", approvedAt: rosterMember ? new Date() : null, approvedBy: rosterMember ? "roster-auto-approval" : null, pledgeClass: rosterMember?.pledgeClass, rosterMemberId: rosterMember?.id } });
-    if (profileImageFile instanceof File && profileImageFile.size > 0) {
-      await prisma.user.update({ where: { id: user.id }, data: { profileImage: await saveUploadedFile(profileImageFile, `members/${user.id}`, "profile") } });
-    }
+    const user = await prisma.user.create({ data: { name: input.name, phone: input.phone, email: input.email, profileImage, passwordHash: await bcrypt.hash(input.password, 12), role: "user", accessStatus: rosterMember ? "approved" : "pending", approvedAt: rosterMember ? new Date() : null, approvedBy: rosterMember ? "roster-auto-approval" : null, pledgeClass: rosterMember?.pledgeClass, rosterMemberId: rosterMember?.id } });
     await createUserSession(user.id);
   } catch (error) {
     if (error instanceof ZodError) return { errors: flattenZodError(error) };
